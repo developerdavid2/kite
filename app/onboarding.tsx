@@ -46,7 +46,7 @@ const slides = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
   const translateX = useSharedValue(0);
 
