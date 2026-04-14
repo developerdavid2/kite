@@ -52,10 +52,8 @@ export default function SplitterScreen() {
 
   return (
     <SafeArea
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-      }}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      bottom={false}
     >
       <ScrollView
         className="flex-1"

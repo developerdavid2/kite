@@ -101,6 +101,7 @@ export function SetupModal({
             borderTopRightRadius: borderRadius.radiusXl,
             maxHeight: 500,
             minHeight: 450,
+            zIndex: 40,
           }}
         >
           <ScrollView

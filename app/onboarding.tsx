@@ -129,7 +129,7 @@ export default function OnboardingScreen() {
           >
             <Image
               source={current.image}
-              style={{ width: 160, height: 160 }}
+              style={{ width: 250, height: 250 }}
               resizeMode="contain"
             />
           </Animated.View>
@@ -169,18 +169,6 @@ export default function OnboardingScreen() {
             >
               {current.description}
             </Animated.Text>
-
-            <TouchableOpacity
-              onPress={completeOnboarding}
-              className="items-center py-2 min-h-12"
-            >
-              <Text
-                className="text-sm font-medium"
-                style={{ color: colors.textSecondary }}
-              >
-                {!isLastSlide ? "Skip for now" : ""}
-              </Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
               onPress={isLastSlide ? completeOnboarding : goForward}

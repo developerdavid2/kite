@@ -35,11 +35,28 @@ export default function ConverterScreen() {
 
   return (
     <SafeArea
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-      }}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      bottom={false}
     >
+      <View className="p-4">
+        <Text
+          className="text-3xl font-semibold text-blue-50 mb-0.5"
+          style={{
+            color: colors.textPrimary,
+          }}
+        >
+          Unit Converter
+        </Text>
+        <Text
+          className="text-sm text-blue-300"
+          style={{
+            color: colors.textSecondary,
+            marginBottom: spacing.space5,
+          }}
+        >
+          Convert between units instantly
+        </Text>
+      </View>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
@@ -47,26 +64,6 @@ export default function ConverterScreen() {
         }}
         onScrollBeginDrag={Keyboard.dismiss}
       >
-        <View className="px-4">
-          <Text
-            className="text-3xl font-jakarta text-blue-50 mb-0.5"
-            style={{
-              color: colors.textPrimary,
-            }}
-          >
-            Unit Converter
-          </Text>
-          <Text
-            className="text-sm text-blue-300"
-            style={{
-              color: colors.textSecondary,
-              marginBottom: spacing.space5,
-            }}
-          >
-            Convert between units instantly
-          </Text>
-        </View>
-
         <View style={{ paddingHorizontal: spacing.space4 }}>
           <CategoryPicker
             selectedCategory={state.category}

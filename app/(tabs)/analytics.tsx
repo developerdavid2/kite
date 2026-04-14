@@ -18,21 +18,11 @@ export default function AnalyticsScreen() {
 
   return (
     <SafeArea
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-      }}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      bottom={false}
     >
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{
-          paddingBottom: spacing.space5,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          className="flex-row justify-between items-center px-4 pt-4 mb-3"
-        >
+      <>
+        <View className="flex-row justify-between items-center px-4 pt-4 mb-3">
           <Text
             className="text-3xl font-jakarta text-blue-50"
             style={{
@@ -46,11 +36,7 @@ export default function AnalyticsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View
-          className="px-4 mb-4"
-        >
-          }}
-        >
+        <View className="px-4 mb-4">
           <Text
             className="text-md text-blue-300"
             style={{
@@ -60,17 +46,20 @@ export default function AnalyticsScreen() {
             7-Day Hydration
           </Text>
         </View>
-
+      </>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingBottom: spacing.space5,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         {isLoading ? (
-          <View
-            className="h-80 justify-center items-center"
-          >
+          <View className="h-80 justify-center items-center">
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : !hasData ? (
-          <View
-            className="px-4 py-8 items-center gap-3"
-          >
+          <View className="px-4 py-8 items-center gap-3">
             <Ionicons name="water-outline" size={60} color={colors.textMuted} />
             <Text
               className="text-md text-gray-500 text-center font-medium"

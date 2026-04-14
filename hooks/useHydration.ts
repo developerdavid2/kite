@@ -1,3 +1,4 @@
+// hooks/useHydration.ts
 import type {
   HydrationState,
   HydrationUser,
@@ -10,6 +11,15 @@ import { useCallback, useEffect, useState } from "react";
 const HYDRATION_KEY = "kite_hydration_user";
 const HYDRATION_LOGS_KEY = "kite_hydration_logs";
 const HYDRATION_DATE_KEY = "kite_hydration_date";
+
+// Check if AsyncStorage is available
+const isAsyncStorageAvailable = () => {
+  try {
+    return AsyncStorage && typeof AsyncStorage.getItem === "function";
+  } catch {
+    return false;
+  }
+};
 
 export function useHydration() {
   const [state, setState] = useState<HydrationState>({
@@ -28,6 +38,13 @@ export function useHydration() {
 
   const loadFromStorage = async () => {
     try {
+      // Check if AsyncStorage is available
+      if (!isAsyncStorageAvailable()) {
+        console.warn("AsyncStorage not available, using default state");
+        setIsReady(true);
+        return;
+      }
+
       const [userJson, logsJson, savedDate] = await Promise.all([
         AsyncStorage.getItem(HYDRATION_KEY),
         AsyncStorage.getItem(HYDRATION_LOGS_KEY),
@@ -86,10 +103,12 @@ export function useHydration() {
     }));
 
     try {
-      await Promise.all([
-        AsyncStorage.setItem(HYDRATION_KEY, JSON.stringify(user)),
-        AsyncStorage.setItem(HYDRATION_DATE_KEY, todayDate),
-      ]);
+      if (isAsyncStorageAvailable()) {
+        await Promise.all([
+          AsyncStorage.setItem(HYDRATION_KEY, JSON.stringify(user)),
+          AsyncStorage.setItem(HYDRATION_DATE_KEY, todayDate),
+        ]);
+      }
     } catch (error) {
       console.error("Failed to persist user data:", error);
     }
@@ -111,10 +130,12 @@ export function useHydration() {
       }));
 
       try {
-        await AsyncStorage.setItem(
-          HYDRATION_LOGS_KEY,
-          JSON.stringify(updatedLogs)
-        );
+        if (isAsyncStorageAvailable()) {
+          await AsyncStorage.setItem(
+            HYDRATION_LOGS_KEY,
+            JSON.stringify(updatedLogs)
+          );
+        }
       } catch (error) {
         console.error("Failed to persist entry:", error);
       }
@@ -132,10 +153,12 @@ export function useHydration() {
       }));
 
       try {
-        await AsyncStorage.setItem(
-          HYDRATION_LOGS_KEY,
-          JSON.stringify(updatedLogs)
-        );
+        if (isAsyncStorageAvailable()) {
+          await AsyncStorage.setItem(
+            HYDRATION_LOGS_KEY,
+            JSON.stringify(updatedLogs)
+          );
+        }
       } catch (error) {
         console.error("Failed to persist deletion:", error);
       }

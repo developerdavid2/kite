@@ -1,3 +1,4 @@
+// components/navigation/CustomTabBar.tsx
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -26,19 +27,20 @@ export function CustomTabBar({
 
   return (
     <View
+      className="flex-row border-t pt-2.5"
       style={{
-        flexDirection: "row",
         backgroundColor: bgColor,
-        borderTopWidth: 1,
         borderTopColor: colors.border,
         paddingBottom: bottomPad,
-        paddingTop: 10,
         minHeight: 60 + bottomPad,
       }}
     >
       {state.routes.map((route, index) => {
-        const isFocused = state.index === index;
         const config = tabConfig[route.name as keyof typeof tabConfig];
+
+        if (!config) return null;
+
+        const isFocused = state.index === index;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -56,21 +58,13 @@ export function CustomTabBar({
             key={route.key}
             onPress={onPress}
             activeOpacity={0.7}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className="flex-1 items-center justify-center"
           >
             <View
+              className="items-center justify-center px-3 py-1.5 min-w-[52px]"
               style={{
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 20,
                 backgroundColor: isFocused ? activeColor + "33" : "transparent",
-                minWidth: 52,
+                borderRadius: isFocused ? 12 : 0,
               }}
             >
               <Ionicons
@@ -79,11 +73,10 @@ export function CustomTabBar({
                 color={isFocused ? activeColor : colors.textMuted}
               />
               <Text
+                className="text-[10px] mt-1"
                 style={{
                   color: isFocused ? activeColor : colors.textMuted,
-                  fontSize: 10,
                   fontWeight: isFocused ? "600" : "400",
-                  marginTop: 3,
                 }}
               >
                 {config.label}
