@@ -15,17 +15,13 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#040F1E",
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "softwareKeyboardLayoutMode": "pan",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.developerdavid2.kite",
-      "versionCode": 1,
-      "enableProguardInReleaseBuilds": true,
-      "enableShrinkResourcesInReleaseBuilds": true
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -38,11 +34,16 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-screen.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "cover",
           "backgroundColor": "#040F1E",
+          "imageWidth": 200,
+          "android": {
+            "backgroundColor": "#040F1E"
+          },
           "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "resizeMode": "cover",
             "backgroundColor": "#040F1E"
           }
         }
