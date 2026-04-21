@@ -4,6 +4,8 @@ import { fontSizes, fontWeights, spacing } from "@/constants/theme";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,7 +16,13 @@ import {
 
 export default function AnalyticsScreen() {
   const { colors } = useTheme();
-  const { stats, hasData, isLoading, refresh } = useAnalytics();
+  const { stats, hasData, isLoading, loadStats, refresh } = useAnalytics();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [loadStats]),
+  );
 
   return (
     <SafeArea

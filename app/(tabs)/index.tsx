@@ -5,42 +5,43 @@ import {
   fontWeights,
   spacing,
 } from "@/constants/theme";
+import { useTasks } from "@/hooks/useTasks";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const tools = [
   {
-    route: "/converter",
+    route: "/(tabs)/converter",
     icon: "git-compare-outline" as const,
     label: "Unit Converter",
-    description: "Convert between length, weight, temperature & more",
+    description: "Length, weight, temperature & more",
     accent: "#4A9FE0",
     bg: "#4A9FE01A",
   },
   {
-    route: "/hydration",
+    route: "/(tabs)/hydration",
     icon: "water-outline" as const,
-    label: "Hydration Tracker",
-    description: "Log your daily water intake and hit your goal",
+    label: "Hydration",
+    description: "Log daily water intake",
     accent: "#38BDF8",
     bg: "#38BDF81A",
   },
   {
-    route: "/splitter",
+    route: "/(tabs)/splitter",
     icon: "cash-outline" as const,
     label: "Bill Splitter",
-    description: "Split expenses with tip calculation and sharing",
+    description: "Split expenses with tip",
     accent: "#34D399",
     bg: "#34D3991A",
   },
   {
-    route: "/analytics",
+    route: "/(tabs)/analytics",
     icon: "bar-chart-outline" as const,
     label: "Analytics",
-    description: "View your 7-day hydration history and trends",
+    description: "7-day hydration trends",
     accent: "#A78BFA",
     bg: "#A78BFA1A",
   },
@@ -56,11 +57,27 @@ function getGreeting() {
 export default function HomeScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
   const [greeting, setGreeting] = useState(getGreeting());
+  const { recentTasks, completedCount, totalCount, toggleTask, loadTasks } =
+    useTasks();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [loadTasks]),
+  );
 
   useEffect(() => {
     const interval = setInterval(() => setGreeting(getGreeting()), 60_000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setGreeting(getGreeting()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const progressPct =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <SafeArea
@@ -99,7 +116,6 @@ export default function HomeScreen() {
             {greeting} 👋
           </Text>
         </View>
-
         <TouchableOpacity
           onPress={toggleTheme}
           style={{
@@ -161,15 +177,10 @@ export default function HomeScreen() {
             Everything you need,{"\n"}right here.
           </Text>
           <Text
-            style={{
-              fontSize: fontSizes.sm,
-              color: "rgba(255,255,255,0.7)",
-            }}
+            style={{ fontSize: fontSizes.sm, color: "rgba(255,255,255,0.7)" }}
           >
             {tools.length} tools ready to use
           </Text>
-
-          {/* Decorative circle */}
           <View
             style={{
               position: "absolute",
@@ -194,7 +205,206 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Section label */}
+        {/* Tasks card — always visible */}
+        <View
+          style={{
+            marginHorizontal: spacing.space4,
+            marginBottom: spacing.space6,
+            backgroundColor: colors.surface,
+            borderRadius: borderRadius.radiusLg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            overflow: "hidden",
+          }}
+        >
+          {/* Header */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: spacing.space4,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: spacing.space2,
+              }}
+            >
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  backgroundColor: "#4A9FE01A",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={17}
+                  color="#4A9FE0"
+                />
+              </View>
+              <Text
+                style={{
+                  fontSize: fontSizes.md,
+                  fontWeight: fontWeights.semibold,
+                  color: colors.textPrimary,
+                }}
+              >
+                Tasks
+              </Text>
+              {totalCount > 0 && (
+                <View
+                  style={{
+                    backgroundColor: colors.primary + "22",
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 99,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: fontWeights.semibold,
+                      color: colors.primary,
+                    }}
+                  >
+                    {completedCount}/{totalCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push("/tasks")}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
+              <Text style={{ fontSize: fontSizes.sm, color: colors.primary }}>
+                {totalCount > 0 ? "See all" : "Add task"}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Progress bar — always show track, fill animates */}
+          <View
+            style={{
+              paddingHorizontal: spacing.space4,
+              paddingTop: spacing.space3,
+            }}
+          >
+            <View
+              style={{
+                height: 5,
+                backgroundColor: colors.border,
+                borderRadius: 99,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  width: `${progressPct}%`,
+                  height: "100%",
+                  backgroundColor: colors.primary,
+                  borderRadius: 99,
+                }}
+              />
+            </View>
+            <Text
+              style={{
+                fontSize: fontSizes.xs,
+                color: colors.textMuted,
+                marginTop: 4,
+                marginBottom: spacing.space2,
+              }}
+            >
+              {totalCount === 0
+                ? "No tasks yet"
+                : `${progressPct}% complete · ${totalCount - completedCount} remaining`}
+            </Text>
+          </View>
+
+          {/* Recent tasks or empty state */}
+          {recentTasks.length === 0 ? (
+            <TouchableOpacity
+              onPress={() => router.push("/tasks")}
+              style={{
+                alignItems: "center",
+                paddingVertical: spacing.space5,
+                gap: spacing.space2,
+              }}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={32}
+                color={colors.textMuted}
+              />
+              <Text style={{ fontSize: fontSizes.sm, color: colors.textMuted }}>
+                Tap to add your first task
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            recentTasks.map((task, index) => {
+              const isDone = task.completed === 1;
+              const isLast = index === recentTasks.length - 1;
+              return (
+                <View
+                  key={task.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingHorizontal: spacing.space4,
+                    paddingVertical: spacing.space3,
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: colors.border,
+                    gap: spacing.space3,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => toggleTask(task.id, task.completed)}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      borderWidth: 2,
+                      borderColor: isDone ? colors.primary : colors.border,
+                      backgroundColor: isDone ? colors.primary : "transparent",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {isDone && (
+                      <Ionicons name="checkmark" size={11} color="#FFFFFF" />
+                    )}
+                  </TouchableOpacity>
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: fontSizes.sm,
+                      color: isDone ? colors.textMuted : colors.textPrimary,
+                      textDecorationLine: isDone ? "line-through" : "none",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {task.title}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        {/* Tools grid label */}
         <Text
           style={{
             paddingHorizontal: spacing.space4,
@@ -209,9 +419,14 @@ export default function HomeScreen() {
           Tools
         </Text>
 
-        {/* Tool cards */}
+        {/* 2×2 grid */}
         <View
-          style={{ paddingHorizontal: spacing.space4, gap: spacing.space3 }}
+          style={{
+            paddingHorizontal: spacing.space4,
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: spacing.space3,
+          }}
         >
           {tools.map((tool) => (
             <TouchableOpacity
@@ -219,60 +434,47 @@ export default function HomeScreen() {
               onPress={() => router.push(tool.route as any)}
               activeOpacity={0.75}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
+                width: "47%",
                 padding: spacing.space4,
                 backgroundColor: colors.surface,
                 borderRadius: borderRadius.radiusMd,
                 borderWidth: 1,
                 borderColor: colors.border,
-                gap: spacing.space3,
+                gap: spacing.space2,
               }}
             >
-              {/* Icon bubble */}
               <View
                 style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 14,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
                   backgroundColor: tool.bg,
                   alignItems: "center",
                   justifyContent: "center",
-                  flexShrink: 0,
+                  marginBottom: spacing.space1,
                 }}
               >
-                <Ionicons name={tool.icon} size={22} color={tool.accent} />
+                <Ionicons name={tool.icon} size={20} color={tool.accent} />
               </View>
-
-              {/* Text */}
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: fontSizes.md,
-                    fontWeight: fontWeights.semibold,
-                    color: colors.textPrimary,
-                    marginBottom: 3,
-                  }}
-                >
-                  {tool.label}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: fontSizes.sm,
-                    color: colors.textSecondary,
-                    lineHeight: 18,
-                  }}
-                  numberOfLines={2}
-                >
-                  {tool.description}
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.textMuted}
-              />
+              <Text
+                style={{
+                  fontSize: fontSizes.sm,
+                  fontWeight: fontWeights.semibold,
+                  color: colors.textPrimary,
+                }}
+              >
+                {tool.label}
+              </Text>
+              <Text
+                style={{
+                  fontSize: fontSizes.xs,
+                  color: colors.textSecondary,
+                  lineHeight: 16,
+                }}
+                numberOfLines={2}
+              >
+                {tool.description}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>

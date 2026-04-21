@@ -14,7 +14,6 @@ export function BarChart({ stats }: BarChartProps) {
   const screenWidth = Dimensions.get("window").width;
   const chartWidth = screenWidth - spacing.space8;
   const barWidth = (chartWidth - spacing.space2 * 6) / 7;
-  const maxPercentage = 100;
   const maxHeight = 200;
 
   return (

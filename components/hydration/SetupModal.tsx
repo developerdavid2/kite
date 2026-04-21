@@ -1,5 +1,4 @@
 import {
-  animationDurations,
   borderRadius,
   fontSizes,
   fontWeights,
@@ -21,8 +20,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface SetupModalProps {
   visible: boolean;
@@ -36,44 +37,78 @@ export function SetupModal({
   initialUser,
 }: SetupModalProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [weight, setWeight] = useState(initialUser?.weight.toString() || "70");
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(
-    initialUser?.weightUnit || "kg"
+    initialUser?.weightUnit || "kg",
   );
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
-    initialUser?.activityLevel || "moderate"
+    initialUser?.activityLevel || "moderate",
   );
 
-  const slideAnimation = useRef(new Animated.Value(0)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(600)).current;
 
   useEffect(() => {
     if (visible) {
-      Animated.timing(slideAnimation, {
-        toValue: 1,
-        duration: animationDurations.normal,
-        useNativeDriver: false,
-      }).start();
-    } else {
-      Animated.timing(slideAnimation, {
-        toValue: 0,
-        duration: animationDurations.normal,
-        useNativeDriver: false,
-      }).start();
+      overlayOpacity.setValue(0);
+      sheetTranslateY.setValue(600);
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.spring(sheetTranslateY, {
+          toValue: 0,
+          damping: 20,
+          stiffness: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [visible, slideAnimation]);
+  }, [overlayOpacity, sheetTranslateY, visible]);
 
-  const bottomSheetHeight = slideAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-500, 0],
-  });
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 600,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() =>
+      onComplete({
+        weight: parseFloat(weight) || 70,
+        weightUnit,
+        activityLevel,
+      }),
+    );
+  };
 
   const handleComplete = () => {
-    const weightNum = parseFloat(weight) || 70;
-    onComplete({
-      weight: weightNum,
-      weightUnit,
-      activityLevel,
-    });
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 600,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() =>
+      onComplete({
+        weight: parseFloat(weight) || 70,
+        weightUnit,
+        activityLevel,
+      }),
+    );
   };
 
   const activityLevels: ActivityLevel[] = [
@@ -84,31 +119,63 @@ export function SetupModal({
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="none">
-      <TouchableOpacity
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
-        activeOpacity={1}
-      >
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <View style={{ flex: 1 }}>
+        {/* Fading backdrop */}
         <Animated.View
           style={{
-            transform: [{ translateY: bottomSheetHeight }],
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            opacity: overlayOpacity,
+          }}
+        >
+          <TouchableWithoutFeedback onPress={handleClose}>
+            <View style={{ flex: 1 }} />
+          </TouchableWithoutFeedback>
+        </Animated.View>
+
+        {/* Sliding sheet */}
+        <Animated.View
+          style={{
             position: "absolute",
             bottom: 0,
             left: 0,
             right: 0,
+            transform: [{ translateY: sheetTranslateY }],
             backgroundColor: colors.surface,
             borderTopLeftRadius: borderRadius.radiusXl,
             borderTopRightRadius: borderRadius.radiusXl,
-            maxHeight: 500,
-            minHeight: 450,
-            zIndex: 40,
+            maxHeight: 540,
+            paddingBottom: Math.max(insets.bottom, spacing.space5),
           }}
         >
+          {/* Handle */}
+          <View style={{ alignItems: "center", paddingTop: spacing.space3 }}>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.border,
+              }}
+            />
+          </View>
+
           <ScrollView
             style={{ padding: spacing.space4 }}
             showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
           >
+            {/* Title row */}
             <View
               style={{
                 flexDirection: "row",
@@ -129,6 +196,7 @@ export function SetupModal({
               <Ionicons name="water" size={24} color={colors.primary} />
             </View>
 
+            {/* Weight */}
             <View style={{ marginBottom: spacing.space5 }}>
               <Text
                 style={{
@@ -157,6 +225,7 @@ export function SetupModal({
                     paddingVertical: spacing.space2,
                     fontSize: fontSizes.md,
                     color: colors.textPrimary,
+                    backgroundColor: colors.surfaceAlt,
                   }}
                   placeholder="70"
                   placeholderTextColor={colors.textMuted}
@@ -204,6 +273,7 @@ export function SetupModal({
               </View>
             </View>
 
+            {/* Activity */}
             <View style={{ marginBottom: spacing.space5 }}>
               <Text
                 style={{
@@ -260,6 +330,7 @@ export function SetupModal({
                 backgroundColor: colors.primary,
                 alignItems: "center",
                 marginTop: spacing.space3,
+                marginBottom: spacing.space4,
               }}
             >
               <Text
@@ -274,7 +345,7 @@ export function SetupModal({
             </TouchableOpacity>
           </ScrollView>
         </Animated.View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }

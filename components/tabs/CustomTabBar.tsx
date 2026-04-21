@@ -18,19 +18,18 @@ export function CustomTabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const bgColor = isDark ? "#040F1E" : "#081E3A";
+  const bgColor = "#040F1E";
   const activeColor = "#4A9FE0";
   const bottomPad = Math.max(insets.bottom, 8);
 
   return (
     <View
-      className="flex-row border-t pt-2.5"
+      className="flex-row p-2.5"
       style={{
         backgroundColor: bgColor,
-        borderTopColor: colors.border,
         paddingBottom: bottomPad,
         minHeight: 60 + bottomPad,
       }}

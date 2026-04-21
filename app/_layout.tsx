@@ -1,3 +1,4 @@
+import { JsStack } from "@/components/stack";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -6,9 +7,10 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
-import { PortalProvider } from "@gorhom/portal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TransitionPresets } from "@react-navigation/stack";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { RelativePathString, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -25,14 +27,38 @@ export const unstable_settings = {
 
 function RootStackNavigator() {
   const { isDark } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        const hasOnboarded = await AsyncStorage.getItem("kite_onboarded");
+        if (hasOnboarded === "true") {
+          router.replace("/(tabs)" as RelativePathString);
+        } else {
+          router.replace("/onboarding");
+        }
+      } catch {
+        router.replace("/onboarding");
+      }
+    };
+
+    bootstrap();
+  }, [router]);
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
+      <JsStack screenOptions={{ headerShown: false }}>
+        <JsStack.Screen
+          name="tasks"
+          options={{
+            headerShown: false,
+            ...TransitionPresets.SlideFromRightIOS,
+          }}
+        />
+        <JsStack.Screen name="onboarding" />
+        <JsStack.Screen name="(tabs)" />
+      </JsStack>
       <StatusBar style={isDark ? "light" : "dark"} />
     </>
   );
@@ -58,9 +84,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <PortalProvider>
-            <RootStackNavigator />
-          </PortalProvider>
+          <RootStackNavigator />
         </GestureHandlerRootView>
       </ThemeProvider>
     </SafeAreaProvider>

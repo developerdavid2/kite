@@ -14,64 +14,62 @@ function getDayLabel(daysAgo: number): string {
   if (daysAgo === 0) return "Today";
   if (daysAgo === 1) return "Yesterday";
   return new Date(
-    Date.now() - daysAgo * 24 * 60 * 60 * 1000
+    Date.now() - daysAgo * 24 * 60 * 60 * 1000,
   ).toLocaleDateString("en-US", { weekday: "short" });
+}
+
+function getLogsKey(dateKey: string): string {
+  return `kite_hydration_logs_${dateKey}`;
 }
 
 export async function getHydrationWeekStats(): Promise<HydrationWeekStats> {
   try {
-    const logsJson = await AsyncStorage.getItem("kite_hydration_logs");
     const userJson = await AsyncStorage.getItem("kite_hydration_user");
 
-    if (!logsJson || !userJson) {
-      return {
-        stats: Array.from({ length: 7 }, (_, i) => ({
-          date: getDateKey(6 - i),
-          dayLabel: getDayLabel(6 - i),
-          amount: 0,
-          goal: 2000,
-          percentage: 0,
-        })),
-        hasData: false,
-      };
-    }
+    const userGoal = userJson
+      ? (() => {
+          const user = JSON.parse(userJson);
+          return user.weight && user.weightUnit && user.activityLevel
+            ? calculateUserGoal(
+                user.weight,
+                user.weightUnit,
+                user.activityLevel,
+              )
+            : 2000;
+        })()
+      : 2000;
 
-    const allLogs = JSON.parse(logsJson);
-    const user = JSON.parse(userJson);
+    const dateKeys = Array.from({ length: 7 }, (_, i) => ({
+      daysAgo: 6 - i,
+      dateKey: getDateKey(6 - i),
+      dayLabel: getDayLabel(6 - i),
+    }));
 
-    const dailyTotals: Record<string, number> = {};
+    const logsPerDay = await Promise.all(
+      dateKeys.map(async ({ dateKey }) => {
+        try {
+          const logsJson = await AsyncStorage.getItem(getLogsKey(dateKey));
+          if (!logsJson) return 0;
+          const logs: { amount: number }[] = JSON.parse(logsJson);
+          return logs.reduce((sum, log) => sum + log.amount, 0);
+        } catch {
+          return 0;
+        }
+      }),
+    );
 
-    for (const log of allLogs) {
-      const date = new Date(log.timestamp);
-      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + log.amount;
-    }
+    const stats: DailyHydrationStat[] = dateKeys.map(
+      ({ dateKey, dayLabel }, i) => {
+        const amount = logsPerDay[i];
+        const percentage = Math.min(100, Math.round((amount / userGoal) * 100));
+        return { date: dateKey, dayLabel, amount, goal: userGoal, percentage };
+      },
+    );
 
-    const userGoal =
-      user.weight && user.weightUnit && user.activityLevel
-        ? calculateUserGoal(user.weight, user.weightUnit, user.activityLevel)
-        : 2000;
-
-    const stats: DailyHydrationStat[] = Array.from({ length: 7 }, (_, i) => {
-      const daysAgo = 6 - i;
-      const dateKey = getDateKey(daysAgo);
-      const amount = dailyTotals[dateKey] || 0;
-      const percentage = Math.min(100, Math.round((amount / userGoal) * 100));
-
-      return {
-        date: dateKey,
-        dayLabel: getDayLabel(daysAgo),
-        amount,
-        goal: userGoal,
-        percentage,
-      };
-    });
-
-    const hasData = Object.values(dailyTotals).some((total) => total > 0);
+    const hasData = logsPerDay.some((total) => total > 0);
 
     return { stats, hasData };
-  } catch (error) {
-    console.error("Failed to get hydration stats:", error);
+  } catch {
     return {
       stats: Array.from({ length: 7 }, (_, i) => ({
         date: getDateKey(6 - i),
@@ -88,7 +86,7 @@ export async function getHydrationWeekStats(): Promise<HydrationWeekStats> {
 function calculateUserGoal(
   weight: number,
   unit: "kg" | "lbs",
-  activity: string
+  activity: string,
 ): number {
   const activityMultipliers: Record<string, number> = {
     sedentary: 0.027,
@@ -96,12 +94,9 @@ function calculateUserGoal(
     moderate: 0.04,
     active: 0.05,
   };
-
   const weightInKg = unit === "lbs" ? weight * 0.453592 : weight;
   const baseAmount = weightInKg * (activityMultipliers[activity] || 0.04);
-  const milliliters = baseAmount * 1000;
-
-  return Math.round(milliliters / 250) * 250;
+  return Math.round((baseAmount * 1000) / 250) * 250;
 }
 
 export function getColorByPercentage(percentage: number): string {

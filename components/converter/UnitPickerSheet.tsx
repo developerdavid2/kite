@@ -1,5 +1,4 @@
 import {
-  animationDurations,
   borderRadius,
   fontSizes,
   fontWeights,
@@ -15,8 +14,10 @@ import {
   Modal,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface UnitPickerSheetProps {
   visible: boolean;
@@ -34,54 +35,104 @@ export function UnitPickerSheet({
   onClose,
 }: UnitPickerSheetProps) {
   const { colors } = useTheme();
-  const slideAnimation = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(500)).current;
 
   useEffect(() => {
     if (visible) {
-      Animated.timing(slideAnimation, {
-        toValue: 1,
-        duration: animationDurations.normal,
-        useNativeDriver: false,
-      }).start();
-    } else {
-      Animated.timing(slideAnimation, {
-        toValue: 0,
-        duration: animationDurations.normal,
-        useNativeDriver: false,
-      }).start();
+      overlayOpacity.setValue(0);
+      sheetTranslateY.setValue(500);
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.spring(sheetTranslateY, {
+          toValue: 0,
+          damping: 20,
+          stiffness: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [visible, slideAnimation]);
+  }, [overlayOpacity, sheetTranslateY, visible]);
 
-  const bottomSheetHeight = slideAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-500, 0],
-  });
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 500,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onClose());
+  };
 
   const handleUnitSelect = (unitId: string) => {
     onUnitSelect(unitId);
-    onClose();
+    handleClose();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none">
-      <TouchableOpacity
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
-        onPress={onClose}
-        activeOpacity={1}
-      >
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <View style={{ flex: 1 }}>
+        {/* Fading full-screen backdrop */}
         <Animated.View
           style={{
-            transform: [{ translateY: bottomSheetHeight }],
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            opacity: overlayOpacity,
+          }}
+        >
+          <TouchableWithoutFeedback onPress={handleClose}>
+            <View style={{ flex: 1 }} />
+          </TouchableWithoutFeedback>
+        </Animated.View>
+
+        {/* Sliding sheet */}
+        <Animated.View
+          style={{
             position: "absolute",
             bottom: 0,
             left: 0,
             right: 0,
+            transform: [{ translateY: sheetTranslateY }],
             backgroundColor: colors.surface,
             borderTopLeftRadius: borderRadius.radiusXl,
             borderTopRightRadius: borderRadius.radiusXl,
-            maxHeight: 500,
+            maxHeight: 520,
+            paddingBottom: Math.max(insets.bottom, spacing.space4),
           }}
         >
+          {/* Handle */}
+          <View style={{ alignItems: "center", paddingTop: spacing.space3 }}>
+            <View
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.border,
+              }}
+            />
+          </View>
+
+          {/* Header */}
           <View
             style={{
               paddingVertical: spacing.space3,
@@ -102,7 +153,7 @@ export function UnitPickerSheet({
             >
               Select Unit
             </Text>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={handleClose}>
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
@@ -110,11 +161,9 @@ export function UnitPickerSheet({
           <FlatList
             data={units}
             keyExtractor={(item) => item.id}
-            scrollEnabled
             style={{ maxHeight: 420 }}
             renderItem={({ item }) => {
               const isSelected = item.id === selectedUnitId;
-
               return (
                 <TouchableOpacity
                   onPress={() => handleUnitSelect(item.id)}
@@ -148,7 +197,6 @@ export function UnitPickerSheet({
                       {item.symbol}
                     </Text>
                   </View>
-
                   {isSelected && (
                     <Ionicons
                       name="checkmark-circle"
@@ -162,7 +210,7 @@ export function UnitPickerSheet({
             }}
           />
         </Animated.View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }

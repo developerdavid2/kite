@@ -1,12 +1,8 @@
-// app/(tabs)/hydration.tsx
 import { IntakeLog } from "@/components/hydration/IntakeLog";
 import { WaterBottle } from "@/components/hydration/WaterBottle";
-import BottomSheetModal, {
-  BottomSheetModalRef,
-} from "@/components/shared/BottomSheetModal";
 import SafeArea from "@/components/shared/SafeArea";
 import { Colors } from "@/constants/colors";
-import { spacing } from "@/constants/theme";
+import { fontSizes, fontWeights, spacing } from "@/constants/theme";
 import { useHydration } from "@/hooks/useHydration";
 import { useTheme } from "@/hooks/useTheme";
 import type { ActivityLevel, LogEntry } from "@/types/hydration.types";
@@ -16,15 +12,23 @@ import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function HydrationScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     user,
     dailyGoal,
@@ -38,15 +42,50 @@ export default function HydrationScreen() {
     deleteEntry,
   } = useHydration();
 
+  const [setupVisible, setSetupVisible] = useState(false);
   const [weight, setWeight] = useState(user?.weight.toString() || "70");
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">(
-    user?.weightUnit || "kg"
+    user?.weightUnit || "kg",
   );
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
-    user?.activityLevel || "moderate"
+    user?.activityLevel || "moderate",
   );
 
-  const bottomSheetRef = useRef<BottomSheetModalRef>(null);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(400)).current;
+
+  const animateIn = () => {
+    overlayOpacity.setValue(0);
+    sheetTranslateY.setValue(400);
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.spring(sheetTranslateY, {
+        toValue: 0,
+        damping: 20,
+        stiffness: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateOut = (onDone: () => void) => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 400,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onDone());
+  };
 
   const handleOpenSetup = () => {
     if (user) {
@@ -54,17 +93,19 @@ export default function HydrationScreen() {
       setWeightUnit(user.weightUnit);
       setActivityLevel(user.activityLevel);
     }
-    bottomSheetRef.current?.open();
+    setSetupVisible(true);
+    animateIn();
+  };
+
+  const handleCloseSetup = () => {
+    Keyboard.dismiss();
+    animateOut(() => setSetupVisible(false));
   };
 
   const handleSetupComplete = () => {
     const weightNum = parseFloat(weight) || 70;
-    saveUser({
-      weight: weightNum,
-      weightUnit,
-      activityLevel,
-    });
-    bottomSheetRef.current?.close();
+    saveUser({ weight: weightNum, weightUnit, activityLevel });
+    handleCloseSetup();
   };
 
   const handleDelete = (entryId: string) => {
@@ -100,10 +141,8 @@ export default function HydrationScreen() {
     "active",
   ];
 
-  // Everything that scrolls (water bottle, buttons, and logs)
   const ScrollableContent = () => (
     <View className="pb-10">
-      {/* Water bottle */}
       <View className="items-center">
         <WaterBottle percentage={percentage} isGoalReached={isGoalReached} />
         <View className="items-center mb-5">
@@ -122,11 +161,10 @@ export default function HydrationScreen() {
         </View>
       </View>
 
-      {/* Add buttons */}
       <View className="gap-3 mb-5 px-4">
         <TouchableOpacity
           onPress={() => addEntry(250)}
-          className="py-3 rounded-md items-center"
+          className="h-14 rounded-3xl items-center justify-center"
           style={{ backgroundColor: colors.primary }}
         >
           <Text className="text-md font-semibold text-white">
@@ -156,7 +194,6 @@ export default function HydrationScreen() {
         </View>
       </View>
 
-      {/* Today's Log Header */}
       <Text
         className="text-md font-semibold px-4 pt-2 pb-2"
         style={{ color: colors.textPrimary }}
@@ -164,11 +201,10 @@ export default function HydrationScreen() {
         Today&apos;s Log
       </Text>
 
-      {/* Logs List */}
       <FlatList
         data={sortedLogs}
         keyExtractor={(item) => item.id}
-        scrollEnabled={false} // Disable inner scrolling since parent ScrollView handles it
+        scrollEnabled={false}
         ListEmptyComponent={<IntakeLog logs={[]} onDeleteEntry={deleteEntry} />}
         renderItem={({ item }: { item: LogEntry }) => (
           <View
@@ -213,7 +249,6 @@ export default function HydrationScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       bottom={false}
     >
-      {/* Fixed Header Section - Only Title and Subtitle */}
       <View className="px-4 pt-3 pb-2">
         <View className="flex-row justify-between items-center">
           <View>
@@ -223,14 +258,6 @@ export default function HydrationScreen() {
             >
               Hydration
             </Text>
-            {isGoalReached && (
-              <Text
-                className="text-sm font-semibold mt-1"
-                style={{ color: Colors.semantic.success }}
-              >
-                ✓ Goal reached!
-              </Text>
-            )}
           </View>
           <TouchableOpacity onPress={handleOpenSetup} className="p-2">
             <Ionicons
@@ -240,130 +267,224 @@ export default function HydrationScreen() {
             />
           </TouchableOpacity>
         </View>
-
-        {/* Subtitle */}
         <Text className="text-sm" style={{ color: colors.textSecondary }}>
           Daily goal: {dailyGoal} ml
         </Text>
+        {isGoalReached && (
+          <Text
+            className="text-sm font-semibold mt-1"
+            style={{ color: Colors.semantic.success }}
+          >
+            ✓ Goal reached!
+          </Text>
+        )}
       </View>
 
-      {/* Scrollable Content - Water bottle, buttons, and logs */}
       <FlatList
-        data={[{ key: "content" }]} // Single item to hold all scrollable content
+        data={[{ key: "content" }]}
         keyExtractor={() => "content"}
         renderItem={() => <ScrollableContent />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: spacing.space10 }}
       />
 
-      {/* Setup Bottom Sheet */}
-      <BottomSheetModal
-        ref={bottomSheetRef}
-        title="Hydration Setup"
-        onClose={() => {}}
+      <Modal
+        visible={setupVisible}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={handleCloseSetup}
       >
-        <View className="gap-5">
-          <View>
-            <Text
-              className="text-sm font-semibold mb-2"
-              style={{ color: colors.textSecondary }}
-            >
-              Your Weight
-            </Text>
-            <View className="flex-row gap-2 items-center">
-              <TextInput
-                className="flex-1 border rounded-md px-3 py-2 text-md"
-                style={{
-                  borderColor: colors.border,
-                  color: colors.textPrimary,
-                  backgroundColor: colors.surfaceAlt,
-                }}
-                placeholder="70"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="decimal-pad"
-                value={weight}
-                onChangeText={setWeight}
-              />
-              <View
-                className="flex-row border rounded-md overflow-hidden"
-                style={{ borderColor: colors.border }}
-              >
-                {(["kg", "lbs"] as const).map((unit) => (
-                  <TouchableOpacity
-                    key={unit}
-                    onPress={() => setWeightUnit(unit)}
-                    className="px-3 py-2"
-                    style={{
-                      backgroundColor:
-                        weightUnit === unit
-                          ? colors.primary
-                          : colors.surfaceAlt,
-                    }}
-                  >
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{
-                        color:
-                          weightUnit === unit ? "#FFFFFF" : colors.textPrimary,
-                      }}
-                    >
-                      {unit}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
+        <View style={{ flex: 1 }}>
+          <Animated.View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              opacity: overlayOpacity,
+            }}
+          >
+            <TouchableWithoutFeedback onPress={handleCloseSetup}>
+              <View style={{ flex: 1 }} />
+            </TouchableWithoutFeedback>
+          </Animated.View>
 
-          <View>
-            <Text
-              className="text-sm font-semibold mb-2"
-              style={{ color: colors.textSecondary }}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
+            <Animated.View
+              style={{
+                transform: [{ translateY: sheetTranslateY }],
+                backgroundColor: colors.surface,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                padding: spacing.space5,
+                paddingBottom: Math.max(insets.bottom, spacing.space5),
+                gap: spacing.space4,
+              }}
             >
-              Activity Level
-            </Text>
-            <View className="gap-2">
-              {activityLevels.map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  onPress={() => setActivityLevel(level)}
-                  className="px-3 py-3 border rounded-md"
+              <View style={{ alignItems: "center", marginBottom: -8 }}>
+                <View
                   style={{
-                    borderColor:
-                      activityLevel === level ? colors.primary : colors.border,
-                    backgroundColor:
-                      activityLevel === level
-                        ? colors.primary
-                        : colors.surfaceAlt,
+                    width: 36,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: colors.border,
+                  }}
+                />
+              </View>
+
+              <Text
+                style={{
+                  fontSize: fontSizes.lg,
+                  fontWeight: fontWeights.semibold,
+                  color: colors.textPrimary,
+                }}
+              >
+                Hydration Setup
+              </Text>
+
+              <View>
+                <Text
+                  style={{
+                    fontSize: fontSizes.sm,
+                    fontWeight: fontWeights.semibold,
+                    color: colors.textSecondary,
+                    marginBottom: spacing.space2,
                   }}
                 >
-                  <Text
-                    className="text-md font-medium"
+                  Your Weight
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: spacing.space2,
+                    alignItems: "center",
+                  }}
+                >
+                  <TextInput
                     style={{
-                      color:
-                        activityLevel === level
-                          ? "#FFFFFF"
-                          : colors.textPrimary,
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 10,
+                      paddingHorizontal: spacing.space4,
+                      paddingVertical: spacing.space3,
+                      fontSize: fontSizes.md,
+                      color: colors.textPrimary,
+                      backgroundColor: colors.surfaceAlt,
+                    }}
+                    placeholder="70"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                    value={weight}
+                    onChangeText={setWeight}
+                  />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 10,
+                      overflow: "hidden",
                     }}
                   >
-                    {getActivityLabel(level)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                    {(["kg", "lbs"] as const).map((unit) => (
+                      <TouchableOpacity
+                        key={unit}
+                        onPress={() => setWeightUnit(unit)}
+                        style={{
+                          paddingHorizontal: spacing.space3,
+                          paddingVertical: spacing.space3,
+                          backgroundColor:
+                            weightUnit === unit
+                              ? colors.primary
+                              : colors.surfaceAlt,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fontSizes.sm,
+                            fontWeight: fontWeights.semibold,
+                            color:
+                              weightUnit === unit
+                                ? "#FFFFFF"
+                                : colors.textPrimary,
+                          }}
+                        >
+                          {unit}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
 
-          <TouchableOpacity
-            onPress={handleSetupComplete}
-            className="py-3 rounded-md items-center mt-3"
-            style={{ backgroundColor: colors.primary }}
-          >
-            <Text className="text-md font-semibold text-white">
-              Save Settings
-            </Text>
-          </TouchableOpacity>
+              <View>
+                <Text
+                  style={{
+                    fontSize: fontSizes.sm,
+                    fontWeight: fontWeights.semibold,
+                    color: colors.textSecondary,
+                    marginBottom: spacing.space2,
+                  }}
+                >
+                  Activity Level
+                </Text>
+                <View style={{ gap: spacing.space2 }}>
+                  {activityLevels.map((level) => (
+                    <TouchableOpacity
+                      key={level}
+                      onPress={() => setActivityLevel(level)}
+                      style={{
+                        paddingHorizontal: spacing.space3,
+                        paddingVertical: spacing.space3,
+                        borderWidth: 1,
+                        borderRadius: 10,
+                        borderColor:
+                          activityLevel === level
+                            ? colors.primary
+                            : colors.border,
+                        backgroundColor:
+                          activityLevel === level
+                            ? colors[700]
+                            : colors.surfaceAlt,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: fontSizes.md,
+                          fontWeight: fontWeights.medium,
+                          color:
+                            activityLevel === level
+                              ? "#FFFFFF"
+                              : colors.textPrimary,
+                        }}
+                      >
+                        {getActivityLabel(level)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleSetupComplete}
+                className="h-14 rounded-3xl items-center justify-center"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <Text className="text-base font-jakarta text-white">
+                  Save Settings
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </KeyboardAvoidingView>
         </View>
-      </BottomSheetModal>
+      </Modal>
     </SafeArea>
   );
 }

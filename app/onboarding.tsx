@@ -1,7 +1,7 @@
 import SafeArea from "@/components/shared/SafeArea";
 import { useTheme } from "@/hooks/useTheme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { RelativePathString, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Dimensions, Image, Text, TouchableOpacity, View } from "react-native";
 import {
@@ -67,10 +67,10 @@ export default function OnboardingScreen() {
             runOnJS(setActiveIndex)(nextIndex);
             translateX.value = withTiming(0, { duration: DURATION });
           }
-        }
+        },
       );
     },
-    [translateX]
+    [translateX],
   );
 
   const goForward = useCallback(() => {
@@ -91,7 +91,7 @@ export default function OnboardingScreen() {
     } catch {
       // storage failure must never block navigation
     }
-    router.replace("/(tabs)");
+    router.replace("/(tabs)" as RelativePathString);
   }, [router]);
 
   const swipeLeft = Gesture.Fling()

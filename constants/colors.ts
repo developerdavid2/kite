@@ -21,7 +21,7 @@ const semantic = {
 export const Colors = {
   light: {
     ...blueScale,
-    background: "#F3F4F6",
+    background: "#ebf0f1",
     surface: "#F9FAFB",
     surfaceAlt: "#F3F4F6",
     border: "#E5E7EB",

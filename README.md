@@ -1,50 +1,193 @@
-# Welcome to your Expo app 👋
+# Kite — Smart Utility Toolkit
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A clean, offline-first mobile utility app built with React Native and Expo. Kite brings together five everyday tools in a single, beautifully designed experience.
 
-## Get started
+## Features
 
-1. Install dependencies
+**Unit Converter**
+Convert between length, weight, temperature, and speed units instantly. Real-time conversion as you type with a smooth category picker and swappable unit selector.
 
-   ```bash
-   npm install
-   ```
+**Hydration Tracker**
+Set a personalised daily water goal based on your weight and activity level. Log intake throughout the day, track progress with an animated water bottle visualisation, and review your 7-day history.
 
-2. Start the app
+**Bill Splitter**
+Enter a bill amount, choose a tip percentage, and split the total across any number of people. Generates a clean receipt-style breakdown instantly.
 
-   ```bash
-   npx expo start
-   ```
+**Analytics**
+A 7-day hydration history chart built with animated bars. Colour-coded by goal achievement — green for strong days, amber for partial, red for low intake.
 
-In the output, you'll find options to open the app in a
+**Task Manager**
+Create, edit, complete, and delete tasks. Persisted locally with SQLite so your list survives app restarts and works fully offline.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tech Stack
 
-## Get a fresh project
+| Technology                   | Purpose                        |
+| ---------------------------- | ------------------------------ |
+| React Native + Expo SDK 54   | Core framework                 |
+| Expo Router v4               | File-based navigation          |
+| NativeWind v4                | Tailwind CSS utility classes   |
+| expo-sqlite                  | Local task persistence         |
+| AsyncStorage                 | Hydration logs and preferences |
+| React Native Reanimated      | Fluid animations               |
+| React Native Gesture Handler | Swipe gestures                 |
+| Plus Jakarta Sans            | Typography                     |
+| TypeScript                   | Strict typing, no `any`        |
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
+## Architecture
+
+```
+kite/
+├── app/
+│   ├── _layout.tsx              Root layout — providers, fonts, navigation
+│   ├── onboarding.tsx           3-slide gesture-driven onboarding
+│   ├── tasks.tsx                Full task manager screen
+│   └── (tabs)/
+│       ├── _layout.tsx          Custom tab bar
+│       ├── index.tsx            Home screen
+│       ├── converter.tsx        Unit Converter
+│       ├── hydration.tsx        Hydration Tracker
+│       ├── splitter.tsx         Bill Splitter
+│       └── analytics.tsx        7-day Analytics
+│
+├── components/
+│   ├── shared/                  SafeArea, InputField, PrimaryButton, etc.
+│   ├── converter/               CategoryPicker, UnitSelector, UnitPickerSheet
+│   ├── hydration/               WaterBottle, IntakeLog
+│   ├── splitter/                TipSelector, PeopleCounter, SplitResult
+│   ├── analytics/               BarChart
+│   ├── tasks/                   TaskItem, TaskInput
+│   └── tabs/                    CustomTabBar
+│
+├── context/
+│   └── ThemeContext.tsx          Light/dark mode + navigation bar sync
+│
+├── hooks/
+│   ├── useTheme.ts
+│   ├── useUnitConverter.ts
+│   ├── useHydration.ts
+│   ├── useSplitter.ts
+│   ├── useAnalytics.ts
+│   └── useTasks.ts
+│
+├── utils/
+│   ├── conversionFormulas.ts
+│   ├── hydrationFormulas.ts
+│   ├── splitFormulas.ts
+│   ├── analyticsFormulas.ts
+│   └── taskDatabase.ts          expo-sqlite setup and queries
+│
+├── types/                        All TypeScript interfaces
+└── constants/                    Colors, theme tokens, unit definitions
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Separation of concerns:**
 
-## Learn more
+- `app/` — screens only, no business logic
+- `components/` — UI only, no raw calculations
+- `hooks/` — all React state, calls utils
+- `utils/` — pure functions, no React
+- `types/` — single source of truth for all interfaces
+- `constants/` — no magic numbers anywhere in the codebase
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Getting Started
 
-## Join the community
+### Prerequisites
 
-Join our community of developers creating universal apps.
+- Node.js 18+
+- Expo Go app on your Android or iOS device
+- Or Android Studio / Xcode for emulator
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Installation
+
+```bash
+git clone https://github.com/developerdavid2/kite.git
+cd kite
+npm install
+```
+
+### Run Locally
+
+```bash
+npx expo start --clear
+```
+
+Scan the QR code with Expo Go on your phone.
+
+---
+
+## Design System
+
+Kite uses a monochromatic blue scale with full light and dark mode support.
+
+| Token          | Light     | Dark      |
+| -------------- | --------- | --------- |
+| Background     | `#F5F9FE` | `#040F1E` |
+| Surface        | `#FFFFFF` | `#081E3A` |
+| Primary        | `#2185D5` | `#4A9FE0` |
+| Text Primary   | `#040F1E` | `#E8F4FD` |
+| Text Secondary | `#1A6BB5` | `#7BB8EA` |
+| Border         | `#BAD9F5` | `#144F8A` |
+
+Semantic colors for feedback states:
+
+| State   | Color     |
+| ------- | --------- |
+| Success | `#22C55E` |
+| Warning | `#F59E0B` |
+| Danger  | `#EF4444` |
+| Info    | `#3B82F6` |
+
+---
+
+## Key Implementation Details
+
+### Offline Persistence
+
+Tasks are stored in a local SQLite database via `expo-sqlite`. The database is initialised on first app launch and persists across sessions with no network required.
+
+```
+utils/taskDatabase.ts  → all SQL queries
+hooks/useTasks.ts      → React state synced with SQLite
+```
+
+Hydration logs are stored per day in AsyncStorage under date-keyed entries (`kite_hydration_logs_YYYY-MM-DD`), preserving 7-day history for analytics.
+
+### Theme System
+
+Light and dark mode respond to system preference on first launch, with a manual toggle that persists via AsyncStorage. The Android navigation bar colour syncs automatically with the active theme via `expo-navigation-bar`.
+
+### Navigation
+
+Expo Router file-based routing with a custom tab bar. The onboarding flow runs once on first launch — completion is tracked in AsyncStorage (`kite_onboarded`). Subsequent launches go directly to the home tab.
+
+### Data Freshness
+
+`useFocusEffect` from Expo Router is used on the Home and Analytics screens to reload data whenever the screen comes into focus — ensuring the task list and hydration chart always reflect the latest state without requiring manual refresh.
+
+---
+
+## Building
+
+### Preview APK (for testing and submission)
+
+```bash
+eas build --platform android --profile preview
+```
+
+### Production AAB (for Play Store)
+
+```bash
+eas build --platform android --profile production
+```
+
+---
+
+## License
+
+MIT
